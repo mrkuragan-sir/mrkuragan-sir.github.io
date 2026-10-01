@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kuragan Terminal</title>
+<meta name="description" content="Emirhan Sirma (Kuragan) — Computer Engineering student. Computer Vision, Automation, AI." />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #000;
+    --g: #00ff41;
+    --g2: #00b32d;
+    --dim: #0a3d16;
+    --text: #c9d1d9;
+    --muted: #5f7a66;
+    --red: #ff3b3b;
+    --amber: #ffcc00;
+    --cyan: #00e5ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Fira Code", monospace; font-size: 15px; line-height: 1.6;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--g); color: #000; }
+  #matrix { position: fixed; inset: 0; z-index: 0; opacity: .22; }
+  /* CRT scanlines */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.18) 3px);
+  }
+  .wrap { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 0 16px; }
+  a { color: var(--g); text-decoration: none; }
+  a:hover { text-shadow: 0 0 8px var(--g); }
+
+  /* TOP BAR */
+  .bar {
+    position: sticky; top: 0; z-index: 20; background: rgba(0,0,0,.85); backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--dim);
+  }
+  .bar .wrap { display: flex; justify-content: space-between; align-items: center; height: 54px; }
+  .brand { color: var(--g); font-weight: 700; text-shadow: 0 0 10px var(--g); }
+  .bar nav { display: flex; gap: 22px; font-size: 13px; }
+  .bar nav a { color: var(--muted); }
+  .bar nav a:hover { color: var(--g); }
+  .clock { font-size: 12px; color: var(--muted); }
+
+  /* HERO */
+  .hero { min-height: calc(100vh - 54px); display: flex; flex-direction: column; justify-content: center; padding: 40px 0; }
+  .glitch {
+    position: relative; font-size: clamp(40px, 9vw, 92px); font-weight: 700; color: var(--g);
+    text-shadow: 0 0 18px rgba(0,255,65,.6); letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .glitch::before, .glitch::after {
+    content: attr(data-text); position: absolute; left: 0; top: 0; width: 100%; overflow: hidden;
+  }
+  .glitch::before { color: var(--red); left: 2px; animation: g1 2.8s infinite linear alternate-reverse; }
+  .glitch::after  { color: var(--cyan); left: -2px; animation: g2 3.4s infinite linear alternate-reverse; }
+  @keyframes g1 { 0%{clip-path:inset(0 0 85% 0)} 20%{clip-path:inset(40% 0 40% 0)} 40%{clip-path:inset(80% 0 5% 0)} 60%{clip-path:inset(10% 0 70% 0)} 80%{clip-path:inset(55% 0 25% 0)} 100%{clip-path:inset(0 0 0 0); opacity:0} }
+  @keyframes g2 { 0%{clip-path:inset(70% 0 10% 0)} 25%{clip-path:inset(5% 0 80% 0)} 50%{clip-path:inset(45% 0 35% 0)} 75%{clip-path:inset(90% 0 0 0)} 100%{clip-path:inset(0 0 0 0); opacity:0} }
+  .sub { color: var(--muted); margin-bottom: 30px; }
+  .sub b { color: var(--text); font-weight: 400; }
+
+  /* TERMINAL WINDOW */
+  .term {
+    border: 1px solid var(--dim); border-radius: 8px; background: rgba(0,8,2,.92);
+    box-shadow: 0 0 0 1px rgba(0,255,65,.05), 0 0 40px rgba(0,255,65,.12);
+    overflow: hidden;
+  }
+  .term-head {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    background: #050f07; border-bottom: 1px solid var(--dim); font-size: 12px; color: var(--muted);
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #ff5f56; } .dot.y { background: #ffbd2e; } .dot.gr { background: #27c93f; }
+  .term-head span { margin-left: 10px; }
+  .term-body { padding: 18px; height: 420px; overflow-y: auto; cursor: text; }
+  .term-body::-webkit-scrollbar { width: 6px; }
+  .term-body::-webkit-scrollbar-thumb { background: var(--dim); }
+  .line { white-space: pre-wrap; word-break: break-word; }
+  .p { color: var(--g); }
+  .ok { color: var(--g); } .warn { color: var(--amber); } .err { color: var(--red); } .c { color: var(--cyan); } .m { color: var(--muted); }
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  .input-row input {
+    flex: 1; background: transparent; border: 0; outline: 0; color: var(--text);
+    font: inherit; caret-color: var(--g);
+  }
+  .hint { margin-top: 14px; font-size: 12px; color: var(--muted); }
+  .hint kbd { color: var(--g); border: 1px solid var(--dim); padding: 1px 6px; border-radius: 3px; cursor: pointer; }
+  .hint kbd:hover { background: var(--dim); }
+
+  /* SECTIONS */
+  section { padding: 90px 0 30px; }
+  .h { color: var(--g); font-size: 22px; margin-bottom: 26px; display: flex; align-items: center; gap: 12px; }
+  .h::before { content: "root@kuragan:~#"; color: var(--muted); font-size: 14px; }
+  .h::after { content: ""; flex: 1; height: 1px; background: var(--dim); }
+  .panel {
+    border: 1px solid var(--dim); background: rgba(0,10,3,.85); border-radius: 6px; padding: 22px;
+    transition: border-color .25s, box-shadow .25s, transform .25s;
+  }
+  .panel:hover { border-color: var(--g); box-shadow: 0 0 24px rgba(0,255,65,.18); transform: translateY(-3px); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 18px; }
+  .pid { color: var(--muted); font-size: 12px; }
+  .panel h3 { color: var(--g); margin: 6px 0 8px; font-size: 17px; }
+  .panel p { color: var(--text); font-size: 14px; opacity: .85; margin-bottom: 14px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 12px; border: 1px solid var(--dim); color: var(--g2); padding: 1px 8px; border-radius: 3px; }
+  .st { float: right; font-size: 11px; color: #000; background: var(--g); padding: 0 6px; border-radius: 2px; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+
+  .about { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .kv div { padding: 4px 0; border-bottom: 1px dashed var(--dim); }
+  .kv span { color: var(--muted); display: inline-block; width: 120px; }
+
+  .skill { margin-bottom: 14px; }
+  .skill .top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .barbg { height: 8px; background: #021006; border: 1px solid var(--dim); }
+  .fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--g2), var(--g)); box-shadow: 0 0 10px var(--g); transition: width 1.6s ease; }
+
+  .links { display: flex; flex-wrap: wrap; gap: 12px; }
+  .links a { border: 1px solid var(--dim); padding: 10px 16px; border-radius: 4px; transition: all .2s; }
+  .links a:hover { background: var(--g); color: #000; text-shadow: none; box-shadow: 0 0 20px var(--g); }
+
+  footer { text-align: center; padding: 60px 0 40px; color: var(--muted); font-size: 12px; }
+
+  .reveal { opacity: 0; transform: translateY(24px); transition: all .8s; }
+  .reveal.show { opacity: 1; transform: none; }
+
+  @media (max-width: 720px) {
+    .bar nav { display: none; }
+    .about { grid-template-columns: 1fr; }
+    .term-body { height: 360px; font-size: 13px; }
+    .kv span { width: 95px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<div class="bar">
+  <div class="wrap">
+    <div class="brand">&gt; kuragan_</div>
+    <nav>
+      <a href="#about">./about</a>
+      <a href="#projects">./projects</a>
+      <a href="#skills">./skills</a>
+      <a href="#contact">./contact</a>
+    </nav>
+    <div class="clock" id="clock"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="glitch" data-text="KURAGAN">KURAGAN</div>
+    <div class="sub">&gt; <b>Emirhan Sirma</b> // Computer Engineering @ Atatürk University // Computer Vision · Automation · AI</div>
+
+    <div class="term">
+      <div class="term-head">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot gr"></div>
+        <span>guest@kuragan: ~ — bash</span>
+      </div>
+      <div class="term-body" id="tb">
+        <div id="out"></div>
+        <div class="input-row" id="row" style="display:none">
+          <span class="p">guest@kuragan:~$</span>
+          <input id="cmd" autocomplete="off" spellcheck="false" aria-label="terminal input" />
+        </div>
+      </div>
+    </div>
+    <div class="hint">Try:
+      <kbd data-c="help">help</kbd> <kbd data-c="whoami">whoami</kbd> <kbd data-c="projects">projects</kbd>
+      <kbd data-c="skills">skills</kbd> <kbd data-c="contact">contact</kbd> <kbd data-c="hack">hack</kbd>
+    </div>
+  </header>
+
+  <!-- ABOUT -->
+  <section id="about" class="reveal">
+    <div class="h">cat about.txt</div>
+    <div class="about">
+      <div class="panel kv">
+        <div><span>name</span>Emirhan Sirma</div>
+        <div><span>alias</span>Kuragan</div>
+        <div><span>role</span>Computer Eng. Student</div>
+        <div><span>university</span>Atatürk University</div>
+        <div><span>location</span>Turkey</div>
+        <div><span>status</span><span class="ok" style="width:auto">● online</span></div>
+      </div>
+      <div class="panel">
+        <p>I build systems at the intersection of <span class="ok">computer vision</span>, <span class="ok">automation</span> and <span class="ok">AI</span> — from real-time target tracking for Teknofest to pipelines that produce videos with zero human touch.</p>
+        <p>Off the keyboard: theoretical physics, mathematics and psychology — the source code of the universe and the mind.</p>
+        <p class="m">// "Automate the boring. Build the impossible."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects" class="reveal">
+    <div class="h">ls ./projects</div>
+    <div class="grid">
+      <div class="panel"><span class="st">BUILDING</span><div class="pid">PID 001</div><h3>air_defense_system</h3>
+        <p>Real-time target detection, tracking and lock-on system for Teknofest.</p>
+        <div class="tags"><span class="tag">Python</span><span class="tag">YOLO</span><span class="tag">OpenCV</span></div></div>
+      <div class="panel"><span class="st">BUILDING</span><div class="pid">PID 002</div><h3>autotube</h3>
+        <p>End-to-end automated pipeline producing YouTube Shorts and long-form videos.</p>
+        <div class="tags"><span class="tag">Python</span><span class="tag">LLM APIs</span><span class="tag">FFmpeg</span></div></div>
+      <div class="panel"><span class="st">BUILDING</span><div class="pid">PID 003</div><h3>cv_annotation_tool</h3>
+        <p>Free, unlimited bbox & polygon labeling with built-in data augmentation.</p>
+        <div class="tags"><span class="tag">Python</span><span class="tag">OpenCV</span></div></div>
+      <div class="panel"><span class="st">BUILDING</span><div class="pid">PID 004</div><h3>study_planner</h3>
+        <p>Cross-platform planner for schedules, topics and resources — with an AI assistant.</p>
+        <div class="tags"><span class="tag">Flutter</span><span class="tag">Gemini API</span></div></div>
+      <div class="panel"><span class="st">BUILDING</span><div class="pid">PID 005</div><h3>lecture_to_pdf</h3>
+        <p>Records Turkish lectures and converts them into clean, readable documents.</p>
+        <div class="tags"><span class="tag">Mobile</span><span class="tag">Speech-to-Text</span></div></div>
+    </div>
+  </section>
+
+  <!-- SKILLS -->
+  <section id="skills" class="reveal">
+    <div class="h">./scan --skills</div>
+    <div class="about">
+      <div class="panel" id="bars1"></div>
+      <div class="panel" id="bars2"></div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="reveal">
+    <div class="h">./connect.sh</div>
+    <div class="panel">
+      <p>Open to collaborations, team projects and interesting ideas. Establish a connection:</p>
+      <div class="links">
+        <a href="mailto:emirhansirma10@gmail.com">[ email ]</a>
+        <a href="https://github.com/mrkuragan-sir" target="_blank">[ github ]</a>
+        <a href="https://www.linkedin.com/in/emirhan-sirma-bb478934a/" target="_blank">[ linkedin ]</a>
+        <a href="https://www.youtube.com/@ifyouwant3225" target="_blank">[ youtube ]</a>
+        <a href="https://www.instagram.com/iamemirhan.exe/" target="_blank">[ instagram ]</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>&gt; session secured · © <span id="yr"></span> Kuragan · exit 0</footer>
+</div>
+
+<script>
+/* ---------- MATRIX RAIN ---------- */
+const mc = document.getElementById("matrix"), mx = mc.getContext("2d");
+const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>/{}$#";
+let cols, drops, fs = 16;
+function msize() {
+  mc.width = innerWidth; mc.height = innerHeight;
+  cols = Math.floor(mc.width / fs); drops = Array(cols).fill(0).map(() => Math.random() * -50);
+}
+msize(); addEventListener("resize", msize);
+setInterval(() => {
+  mx.fillStyle = "rgba(0,0,0,.08)"; mx.fillRect(0, 0, mc.width, mc.height);
+  mx.font = fs + "px monospace";
+  for (let i = 0; i < cols; i++) {
+    const ch = chars[Math.floor(Math.random() * chars.length)];
+    mx.fillStyle = Math.random() > .975 ? "#ccffcc" : "#00ff41";
+    mx.fillText(ch, i * fs, drops[i] * fs);
+    if (drops[i] * fs > mc.height && Math.random() > .975) drops[i] = 0;
+    drops[i]++;
+  }
+}, 50);
+
+/* ---------- CLOCK ---------- */
+const ck = document.getElementById("clock");
+setInterval(() => ck.textContent = new Date().toLocaleTimeString("en-GB") + " UTC+3", 1000);
+document.getElementById("yr").textContent = new Date().getFullYear();
+
+/* ---------- TERMINAL ---------- */
+const out = document.getElementById("out"), row = document.getElementById("row"),
+      inp = document.getElementById("cmd"), tb = document.getElementById("tb");
+const hist = []; let hi = 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function print(html, cls = "") {
+  const d = document.createElement("div"); d.className = "line " + cls; d.innerHTML = html;
+  out.appendChild(d); tb.scrollTop = tb.scrollHeight; return d;
+}
+async function typeLine(text, cls = "", speed = 14) {
+  const d = print("", cls);
+  for (const ch of text) { d.textContent += ch; tb.scrollTop = tb.scrollHeight; await sleep(speed); }
+}
+
+const C = {
+  help: () => [
+    "<span class='c'>Available commands:</span>",
+    "  <span class='ok'>whoami</span>     who is behind this terminal",
+    "  <span class='ok'>projects</span>   list running projects",
+    "  <span class='ok'>skills</span>     tech arsenal",
+    "  <span class='ok'>contact</span>    ways to reach me",
+    "  <span class='ok'>social</span>     open social links",
+    "  <span class='ok'>github</span>     open GitHub profile",
+    "  <span class='ok'>hack</span>       ...try it",
+    "  <span class='ok'>date</span>       current date",
+    "  <span class='ok'>clear</span>      clear terminal",
+  ],
+  whoami: () => [
+    "<span class='ok'>Emirhan Sirma</span> <span class='m'>aka</span> <span class='ok'>Kuragan</span>",
+    "Computer Engineering student @ Atatürk University, Turkey.",
+    "Focus: Computer Vision · Automation · AI · Mobile Apps",
+    "Interests: Theoretical Physics · Mathematics · Psychology",
+  ],
+  projects: () => [
+    "<span class='m'>PID  NAME                 STATUS</span>",
+    "001  air_defense_system   <span class='ok'>[BUILDING]</span>",
+    "002  autotube             <span class='ok'>[BUILDING]</span>",
+    "003  cv_annotation_tool   <span class='ok'>[BUILDING]</span>",
+    "004  study_planner        <span class='ok'>[BUILDING]</span>",
+    "005  lecture_to_pdf       <span class='ok'>[BUILDING]</span>",
+    "<span class='m'>→ scroll down or click <a href='#projects'>./projects</a> for details</span>",
+  ],
+  skills: () => [
+    "<span class='c'>languages</span>  Python · C · C++ · Java · Kotlin · Dart",
+    "<span class='c'>ai/vision</span>  PyTorch · YOLO · OpenCV · NumPy · CUDA",
+    "<span class='c'>mobile</span>     Flutter · Android · Firebase",
+    "<span class='c'>tools</span>      Git · GitHub Actions · Docker · Linux",
+  ],
+  contact: () => [
+    "email     <a href='mailto:emirhansirma10@gmail.com'>emirhansirma10@gmail.com</a>",
+    "github    <a href='https://github.com/mrkuragan-sir' target='_blank'>github.com/mrkuragan-sir</a>",
+    "linkedin  <a href='https://www.linkedin.com/in/emirhan-sirma-bb478934a/' target='_blank'>linkedin.com/in/emirhan-sirma</a>",
+    "youtube   <a href='https://www.youtube.com/@ifyouwant3225' target='_blank'>@ifyouwant3225</a>",
+    "instagram <a href='https://www.instagram.com/iamemirhan.exe/' target='_blank'>@iamemirhan.exe</a>",
+  ],
+  social: () => C.contact(),
+  github: () => { open("https://github.com/mrkuragan-sir", "_blank"); return ["<span class='ok'>opening github...</span>"]; },
+  date: () => [new Date().toString()],
+  ls: () => ["about.txt  projects/  skills.dat  contact.sh  <span class='err'>secret.enc</span>"],
+  "cat secret.enc": () => ["<span class='err'>Permission denied.</span> Nice try though."],
+  sudo: () => ["<span class='err'>guest is not in the sudoers file. This incident will be reported.</span>"],
+  rm: () => ["<span class='err'>rm: operation not permitted. I like my files.</span>"],
+  exit: () => ["<span class='warn'>There is no escape. Try 'help'.</span>"],
+};
+
+async function hack() {
+  const steps = [
+    ["Initializing exploit framework...", "m"], ["Scanning ports 1-65535...", "m"],
+    ["[+] Port 443 open", "ok"], ["[+] Bypassing firewall...", "ok"],
+    ["[+] Injecting payload ████████████████ 100%", "ok"],
+    ["[!] Intrusion detected by Kuragan.", "warn"],
+    ["[x] Access revoked. Just kidding — you're welcome here. 😉", "err"],
+  ];
+  for (const [t, c] of steps) { await typeLine(t, c, 10); await sleep(220); }
+}
+
+async function run(raw) {
+  const cmd = raw.trim();
+  print(`<span class="p">guest@kuragan:~$</span> ${cmd.replace(/</g, "&lt;")}`);
+  if (!cmd) return;
+  hist.push(cmd); hi = hist.length;
+  const key = cmd.toLowerCase();
+  const base = key.split(" ")[0];
+  if (key === "clear") { out.innerHTML = ""; return; }
+  if (base === "hack") { row.style.display = "none"; await hack(); row.style.display = "flex"; inp.focus(); return; }
+  const fn = C[key] || C[base];
+  if (fn) fn().forEach(l => print(l));
+  else print(`<span class="err">command not found: ${base.replace(/</g, "&lt;")}</span> — type <span class="ok">help</span>`);
+}
+
+inp.addEventListener("keydown", e => {
+  if (e.key === "Enter") { run(inp.value); inp.value = ""; }
+  else if (e.key === "ArrowUp" && hi > 0) { inp.value = hist[--hi]; e.preventDefault(); }
+  else if (e.key === "ArrowDown") { hi = Math.min(hist.length, hi + 1); inp.value = hist[hi] || ""; }
+  else if (e.key === "Tab") {
+    e.preventDefault();
+    const m = Object.keys(C).find(k => k.startsWith(inp.value));
+    if (m) inp.value = m;
+  }
+});
+tb.addEventListener("click", () => inp.focus());
+document.querySelectorAll("kbd[data-c]").forEach(k => k.addEventListener("click", () => {
+  if (row.style.display !== "none") { run(k.dataset.c); inp.focus(); }
+}));
+
+(async function boot() {
+  const lines = [
+    ["KURAGAN-OS v2.6.1 (tty1)", "m"], ["", ""],
+    ["[ OK ] Loading kernel modules...", "ok"], ["[ OK ] Mounting /projects", "ok"],
+    ["[ OK ] Starting computer-vision daemon", "ok"], ["[ OK ] Establishing secure connection", "ok"],
+    ["[WARN] Coffee level low", "warn"], ["", ""],
+    ["Welcome, guest. Type 'help' to see available commands.", "c"], ["", ""],
+  ];
+  for (const [t, c] of lines) { await typeLine(t, c, 9); await sleep(90); }
+  run("whoami");
+  print("");
+  row.style.display = "flex";
+  if (matchMedia("(pointer:fine)").matches) inp.focus({ preventScroll: true });
+})();
+
+/* ---------- SKILL BARS ---------- */
+const S1 = [["Python", 85], ["C / C++", 65], ["Java", 55], ["Kotlin / Dart", 50]];
+const S2 = [["Computer Vision (YOLO/OpenCV)", 80], ["Automation Pipelines", 85], ["PyTorch", 60], ["Git / CI", 70]];
+function bars(id, arr) {
+  document.getElementById(id).innerHTML = arr.map(([n, v]) =>
+    `<div class="skill"><div class="top"><span>${n}</span><span class="ok">${v}%</span></div>
+     <div class="barbg"><div class="fill" data-v="${v}"></div></div></div>`).join("");
+}
+bars("bars1", S1); bars("bars2", S2);
+
+/* ---------- REVEAL ---------- */
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  e.target.classList.add("show");
+  e.target.querySelectorAll(".fill").forEach(f => f.style.width = f.dataset.v + "%");
+}), { threshold: .15 });
+document.querySelectorAll(".reveal").forEach(s => io.observe(s));
+</script>
+</body>
+</html>
