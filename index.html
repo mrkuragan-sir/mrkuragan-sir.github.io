@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Kuragan Terminal</title>
-<meta name="description" content="Emirhan Sirma (Kuragan) — Computer Engineering student. Computer Vision, Automation, AI." />
+<meta name="description" content="Emirhan Sirma (Kuragan), computer engineering student. Computer Vision, Automation, AI." />
 <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
@@ -27,7 +27,7 @@
   }
   ::selection { background: var(--g); color: #000; }
   #matrix { position: fixed; inset: 0; z-index: 0; opacity: .22; }
-  /* CRT scanlines */
+  /* scanlines */
   body::after {
     content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
     background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0,0,0,.18) 3px);
@@ -161,7 +161,7 @@
     <div class="term">
       <div class="term-head">
         <div class="dot r"></div><div class="dot y"></div><div class="dot gr"></div>
-        <span>guest@kuragan: ~ — bash</span>
+        <span>guest@kuragan: ~ (bash)</span>
       </div>
       <div class="term-body" id="tb">
         <div id="out"></div>
@@ -177,7 +177,7 @@
     </div>
   </header>
 
-  <!-- ABOUT -->
+  <!-- about -->
   <section id="about" class="reveal">
     <div class="h">cat about.txt</div>
     <div class="about">
@@ -190,14 +190,14 @@
         <div><span>status</span><span class="ok" style="width:auto">● online</span></div>
       </div>
       <div class="panel">
-        <p>I build systems at the intersection of <span class="ok">computer vision</span>, <span class="ok">automation</span> and <span class="ok">AI</span> — from real-time target tracking for Teknofest to pipelines that produce videos with zero human touch.</p>
-        <p>Off the keyboard: theoretical physics, mathematics and psychology — the source code of the universe and the mind.</p>
+        <p>I like building stuff around <span class="ok">computer vision</span>, <span class="ok">automation</span> and <span class="ok">AI</span>. Right now that means real-time target tracking for Teknofest and a pipeline that makes videos on its own.</p>
+        <p>When I'm not coding I'm usually reading about theoretical physics, math or psychology.</p>
         <p class="m">// "Automate the boring. Build the impossible."</p>
       </div>
     </div>
   </section>
 
-  <!-- PROJECTS -->
+  <!-- projects -->
   <section id="projects" class="reveal">
     <div class="h">ls ./projects</div>
     <div class="grid">
@@ -211,7 +211,7 @@
         <p>Free, unlimited bbox & polygon labeling with built-in data augmentation.</p>
         <div class="tags"><span class="tag">Python</span><span class="tag">OpenCV</span></div></div>
       <div class="panel"><span class="st">BUILDING</span><div class="pid">PID 004</div><h3>study_planner</h3>
-        <p>Cross-platform planner for schedules, topics and resources — with an AI assistant.</p>
+        <p>Cross-platform planner for schedules, topics and resources, with an AI assistant.</p>
         <div class="tags"><span class="tag">Flutter</span><span class="tag">Gemini API</span></div></div>
       <div class="panel"><span class="st">BUILDING</span><div class="pid">PID 005</div><h3>lecture_to_pdf</h3>
         <p>Records Turkish lectures and converts them into clean, readable documents.</p>
@@ -219,7 +219,7 @@
     </div>
   </section>
 
-  <!-- SKILLS -->
+  <!-- skills -->
   <section id="skills" class="reveal">
     <div class="h">./scan --skills</div>
     <div class="about">
@@ -228,7 +228,7 @@
     </div>
   </section>
 
-  <!-- CONTACT -->
+  <!-- contact -->
   <section id="contact" class="reveal">
     <div class="h">./connect.sh</div>
     <div class="panel">
@@ -247,7 +247,7 @@
 </div>
 
 <script>
-/* ---------- MATRIX RAIN ---------- */
+// matrix rain
 const mc = document.getElementById("matrix"), mx = mc.getContext("2d");
 const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>/{}$#";
 let cols, drops, fs = 16;
@@ -268,12 +268,12 @@ setInterval(() => {
   }
 }, 50);
 
-/* ---------- CLOCK ---------- */
+// clock
 const ck = document.getElementById("clock");
 setInterval(() => ck.textContent = new Date().toLocaleTimeString("en-GB") + " UTC+3", 1000);
 document.getElementById("yr").textContent = new Date().getFullYear();
 
-/* ---------- TERMINAL ---------- */
+// terminal
 const out = document.getElementById("out"), row = document.getElementById("row"),
       inp = document.getElementById("cmd"), tb = document.getElementById("tb");
 const hist = []; let hi = 0;
@@ -313,7 +313,7 @@ const C = {
     "003  cv_annotation_tool   <span class='ok'>[BUILDING]</span>",
     "004  study_planner        <span class='ok'>[BUILDING]</span>",
     "005  lecture_to_pdf       <span class='ok'>[BUILDING]</span>",
-    "<span class='m'>→ scroll down or click <a href='#projects'>./projects</a> for details</span>",
+    "<span class='m'>-> scroll down or click <a href='#projects'>./projects</a> for details</span>",
   ],
   skills: () => [
     "<span class='c'>languages</span>  Python · C · C++ · Java · Kotlin · Dart",
@@ -344,7 +344,7 @@ async function hack() {
     ["[+] Port 443 open", "ok"], ["[+] Bypassing firewall...", "ok"],
     ["[+] Injecting payload ████████████████ 100%", "ok"],
     ["[!] Intrusion detected by Kuragan.", "warn"],
-    ["[x] Access revoked. Just kidding — you're welcome here. 😉", "err"],
+    ["[x] Access revoked. Just kidding, you're welcome here :)", "err"],
   ];
   for (const [t, c] of steps) { await typeLine(t, c, 10); await sleep(220); }
 }
@@ -360,7 +360,7 @@ async function run(raw) {
   if (base === "hack") { row.style.display = "none"; await hack(); row.style.display = "flex"; inp.focus(); return; }
   const fn = C[key] || C[base];
   if (fn) fn().forEach(l => print(l));
-  else print(`<span class="err">command not found: ${base.replace(/</g, "&lt;")}</span> — type <span class="ok">help</span>`);
+  else print(`<span class="err">command not found: ${base.replace(/</g, "&lt;")}</span>. type <span class="ok">help</span>`);
 }
 
 inp.addEventListener("keydown", e => {
@@ -393,7 +393,7 @@ document.querySelectorAll("kbd[data-c]").forEach(k => k.addEventListener("click"
   if (matchMedia("(pointer:fine)").matches) inp.focus({ preventScroll: true });
 })();
 
-/* ---------- SKILL BARS ---------- */
+// skill bars
 const S1 = [["Python", 85], ["C / C++", 65], ["Java", 55], ["Kotlin / Dart", 50]];
 const S2 = [["Computer Vision (YOLO/OpenCV)", 80], ["Automation Pipelines", 85], ["PyTorch", 60], ["Git / CI", 70]];
 function bars(id, arr) {
@@ -403,7 +403,7 @@ function bars(id, arr) {
 }
 bars("bars1", S1); bars("bars2", S2);
 
-/* ---------- REVEAL ---------- */
+// fade in on scroll
 const io = new IntersectionObserver(es => es.forEach(e => {
   if (!e.isIntersecting) return;
   e.target.classList.add("show");
